@@ -1,0 +1,261 @@
+/* Global Styles and Variables */
+:root {
+    --primary-color: #2c3e50;
+    --secondary-color: #3498db;
+    --accent-color: #e74c3c;
+    --background-light: #f8f9fa;
+    --text-color: #2c3e50;
+    --border-color: #dee2e6;
+    --success-color: #2ecc71;
+    --warning-color: #f1c40f;
+    --box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Base Styles */
+body {
+    font-family: 'Roboto', sans-serif;
+    color: var(--text-color);
+    background-color: var(--background-light);
+    line-height: 1.6;
+}
+
+/* Header Styles */
+.app-header {
+    background-color: var(--primary-color);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: var(--box-shadow);
+}
+
+.title-container {
+    text-align: center;
+}
+
+.main-title {
+    color: white;
+    font-size: 2.5rem;
+    font-weight: 500;
+    margin: 0;
+}
+
+.subtitle {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 1.1rem;
+    margin-top: 0.5rem;
+}
+
+/* Sidebar Styles */
+.custom-sidebar {
+    background-color: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: var(--box-shadow);
+}
+
+.section-title {
+    color: var(--primary-color);
+    font-weight: 500;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid var(--secondary-color);
+}
+
+.subsection-title {
+    color: var(--primary-color);
+    font-weight: 500;
+    margin-top: 1.5rem;
+}
+
+/* Input Styles */
+.custom-select {
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 8px;
+    margin-bottom: 1rem;
+    width: 100%;
+    background-color: white;
+}
+
+.selectize-input {
+    white-space: nowrap;        /* Evita que el texto ocupe varias líneas */
+    overflow: hidden;           /* Esconde el texto que no cabe */
+    text-overflow: ellipsis;    /* Agrega "..." al final del texto */
+    max-width: 100%;            /* Asegura que no crezca más que el contenedor */NEW
+}
+
+
+.custom-numeric {
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 8px;
+    width: 100%;
+}
+
+.custom-date-range {
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 8px;
+    margin-bottom: 1rem;
+}
+
+/* Button Styles */
+.custom-download-btn {
+    background-color: var(--secondary-color);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 10px 20px;
+    font-weight: 500;
+    transition: background-color 0.3s ease;
+}
+
+.custom-download-btn:hover {
+    background-color: #2980b9;
+}
+
+/* Container Styles */
+.info-container, .analysis-container {
+    background-color: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: var(--box-shadow);
+}
+
+.charts-container {
+    background-color: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-top: 1rem;
+}
+
+/* Box Styles */
+.info-box, .filter-box, .settings-box, .chart-box {
+    background-color: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: var(--box-shadow);
+}
+
+.chart-box {
+    height: 100%;
+}
+
+.selection-box {
+    background-color: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: var(--box-shadow);
+}
+
+/* Table Styles */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 1rem;
+}
+
+th {
+    background-color: var(--background-light);
+    color: var(--primary-color);
+    font-weight: 500;
+    padding: 12px;
+    text-align: left;
+    border-bottom: 2px solid var(--border-color);
+}
+
+td {
+    padding: 12px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* Plot Styles */
+.custom-plot {
+    background-color: white;
+    border-radius: 4px;
+    padding: 1rem;
+}
+
+/* Radio Button Styles */
+.custom-radio {
+    margin-bottom: 1rem;
+}
+
+.custom-radio .radio {
+    margin-bottom: 0.5rem;
+}
+
+/* Transformation Section */
+.transformation-options {
+    background-color: var(--background-light);
+    border-radius: 8px;
+    padding: 1rem;
+    margin-top: 1rem;
+}
+
+/* Custom HR */
+.custom-hr {
+    border: 0;
+    height: 1px;
+    background-color: var(--border-color);
+    margin: 1.5rem 0;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .custom-sidebar {
+        margin-bottom: 1.5rem;
+    }
+    
+    .main-title {
+        font-size: 2rem;
+    }
+    
+    .chart-box {
+        margin-bottom: 1.5rem;
+    }
+}
+
+/* Tab Styles */
+.nav-tabs {
+    border-bottom: 2px solid var(--border-color);
+    margin-bottom: 1.5rem;
+}
+
+.nav-tabs > li > a {
+    color: var(--text-color);
+    border: none;
+    border-bottom: 2px solid transparent;
+    margin-right: 2px;
+    padding: 10px 20px;
+}
+
+.nav-tabs > li.active > a,
+.nav-tabs > li.active > a:focus,
+.nav-tabs > li.active > a:hover {
+    color: var(--secondary-color);
+    background-color: transparent;
+    border: none;
+    border-bottom: 2px solid var(--secondary-color);
+}
+
+/* Filter Section Styles */
+.filters-section {
+    margin-bottom: 2rem;
+}
+
+/* Loading Spinner */
+.shiny-spinner {
+    margin-top: 2rem;
+}
+
+/* Error Messages */
+.shiny-output-error {
+    color: var(--accent-color);
+    padding: 1rem;
+    margin: 1rem 0;
+    border-radius: 4px;
+    background-color: rgba(231, 76, 60, 0.1);
+}
