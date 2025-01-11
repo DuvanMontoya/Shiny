@@ -562,6 +562,15 @@ server <- function(input, output, session) {
       select(all_of(vars_to_correlate)) %>%
       mutate(across(everything(), as.numeric))
     
+    # Eliminar columnas con varianza cero
+    cor_data <- cor_data %>%
+      select(where(~ sd(.) > 0))
+    
+    if(ncol(cor_data) < 2){
+      showNotification("No hay suficientes variables con varianza positiva para la matriz de correlación.", type = "error")
+      return(NULL)
+    }
+    
     # Verificar si hay suficientes datos
     if(nrow(cor_data) < 2){
       showNotification("No hay suficientes datos para la matriz de correlación.", type = "error")
@@ -573,6 +582,11 @@ server <- function(input, output, session) {
     # Verificar si la matriz de correlación es válida
     if(any(is.na(cor_matrix))){
       showNotification("La matriz de correlación contiene valores NA. Verifica los datos ingresados.", type = "warning")
+    }
+    
+    # Verificar si alguna columna tiene varianza cero
+    if(any(apply(cor_matrix, 2, function(x) all(is.na(x))))){
+      showNotification("Algunas variables no tienen correlación válida. Verifica los datos ingresados.", type = "warning")
     }
     
     corrplot(cor_matrix, method = "color",
@@ -718,7 +732,8 @@ server <- function(input, output, session) {
     # Construir dataframe para S-Curve
     df_scurve_multi <- rv$filtered_data %>%
       mutate(Period = if("Period" %in% names(.)) as.Date(Period) else if("periodo" %in% names(.)) as.Date(periodo) else as.Date(NA)) %>%
-      select(Period, value = sum_variable) %>%
+      mutate(value = sum_variable) %>%
+      select(Period, value) %>%
       filter(!is.na(Period))
     
     if(nrow(df_scurve_multi) == 0){

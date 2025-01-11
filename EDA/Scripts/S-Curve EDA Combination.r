@@ -56,17 +56,17 @@ create_flighting_chart <- function(
     scale_level_suffix <- "MB"
   }
   
-  # Ejemplo de key_points
+  # Ejemplo dinámico de key_points basado en percentiles
   key_points <- data.frame(
     Key_point = c("Breakthrough","Optimal begins","Saturation begins","Full saturation","Max efficiency"),
-    indexing  = c(5e6, 10e6, 30e6, 50e6, 20e6)  # datos de ejemplo
+    indexing  = quantile(var_activity$value, probs = c(0.2, 0.4, 0.6, 0.8, 1.0), na.rm=TRUE)
   )
   
   max_activity <- max(var_activity$value, na.rm=TRUE)
   
   # 52w_Avg
   n_52 <- min(52, nrow(var_activity))
-  last_52 <- tail(var_activity, n_52) %>% filter(value>1000)
+  last_52 <- tail(var_activity, n_52) %>% filter(value > 1000)
   Avg_52w <- mean(last_52$value, na.rm=TRUE)
   if(is.na(Avg_52w)) Avg_52w <- 0
   
