@@ -168,19 +168,27 @@ server <- function(input, output, session) {
     if(!is.null(rv$variable_mapping)){
       if(input$product != "All/Total"){
         vars_to_remove <- names(rv$variable_mapping)[sapply(rv$variable_mapping, function(x) x$product != input$product)]
-        filtered <- filtered %>% select(-all_of(vars_to_remove))
+        if(length(vars_to_remove) > 0){
+          filtered <- filtered %>% select(-all_of(vars_to_remove))
+        }
       }
       if(input$campaign != "Total"){
         vars_to_remove <- names(rv$variable_mapping)[sapply(rv$variable_mapping, function(x) x$campaign != input$campaign)]
-        filtered <- filtered %>% select(-all_of(vars_to_remove))
+        if(length(vars_to_remove) > 0){
+          filtered <- filtered %>% select(-all_of(vars_to_remove))
+        }
       }
       if(input$outlet != "Total"){
         vars_to_remove <- names(rv$variable_mapping)[sapply(rv$variable_mapping, function(x) x$outlet != input$outlet)]
-        filtered <- filtered %>% select(-all_of(vars_to_remove))
+        if(length(vars_to_remove) > 0){
+          filtered <- filtered %>% select(-all_of(vars_to_remove))
+        }
       }
       if(input$creative != "Total"){
         vars_to_remove <- names(rv$variable_mapping)[sapply(rv$variable_mapping, function(x) x$creative != input$creative)]
-        filtered <- filtered %>% select(-all_of(vars_to_remove))
+        if(length(vars_to_remove) > 0){
+          filtered <- filtered %>% select(-all_of(vars_to_remove))
+        }
       }
     }
     
@@ -363,6 +371,45 @@ server <- function(input, output, session) {
       )
   })
   
+  # TAB: Univariate - Transformed Variable
+  output$var_transf_chart <- renderPlotly({
+    req(rv$filtered_data, input$variable_univ, input$transformation_univ)
+    
+    var_name <- input$variable_univ
+    trans_type <- input$transformation_univ
+    alpha <- input$alpha_univ
+    beta <- input$beta_univ
+    maxval <- input$maxval_univ
+    decay <- input$decay_univ
+    lag <- input$lag_univ
+    
+    transformed_data <- apply_transformation(
+      rv$filtered_data[[var_name]],
+      type = trans_type,
+      alpha = alpha,
+      beta = beta,
+      maxval = maxval,
+      decay = decay,
+      lag = lag
+    )
+    
+    date_col <- if("Period" %in% names(rv$filtered_data)) "Period" else "periodo"
+    
+    df_transformed <- rv$filtered_data %>%
+      mutate(Transformed = transformed_data) %>%
+      select(!!sym(date_col), Transformed) %>%
+      filter(!is.na(Transformed))
+    
+    p <- ggplot(df_transformed, aes(x = .data[[date_col]], y = Transformed)) +
+      geom_line(color = "red") +
+      theme_minimal() +
+      labs(title = paste("Transformed Variable:", var_name),
+           x = "Time",
+           y = "Transformed Value")
+    
+    ggplotly(p)
+  })
+  
   # TAB: Univariate - S-Curve EDA Gráfico Integrado
   output$s_curve_univariate_plot <- renderPlotly({
     req(rv$filtered_data, input$variable_univ)
@@ -380,26 +427,45 @@ server <- function(input, output, session) {
       select(Period, value = !!sym(var_name)) %>%
       filter(!is.na(Period))
     
-    # Crear gráficos
-    flighting_plot_gg <- create_flighting_chart(
-      data_chart = df_scurve,
-      alpha       = alpha,
-      beta        = beta,
-      max_val_pct = max_val_pct,
-      decay       = decay,
-      lag         = lag,
-      var_name    = var_name
-    )
+    if(nrow(df_scurve) == 0){
+      showNotification("No hay datos disponibles para crear la S-Curve.", type = "error")
+      return(NULL)
+    }
     
-    s_curve_plot_gg <- create_s_curve_chart(
-      data_chart = df_scurve,
-      alpha       = alpha,
-      beta        = beta,
-      max_val_pct = max_val_pct,
-      decay       = decay,
-      lag         = lag,
-      var_name    = var_name
-    )
+    # Crear gráficos
+    flighting_plot_gg <- tryCatch({
+      create_flighting_chart(
+        data_chart = df_scurve,
+        alpha       = alpha,
+        beta        = beta,
+        max_val_pct = max_val_pct,
+        decay       = decay,
+        lag         = lag,
+        var_name    = var_name
+      )
+    }, error = function(e){
+      showNotification(paste("Error en Flighting Chart:", e$message), type = "error")
+      return(NULL)
+    })
+    
+    s_curve_plot_gg <- tryCatch({
+      create_s_curve_chart(
+        data_chart = df_scurve,
+        alpha       = alpha,
+        beta        = beta,
+        max_val_pct = max_val_pct,
+        decay       = decay,
+        lag         = lag,
+        var_name    = var_name
+      )
+    }, error = function(e){
+      showNotification(paste("Error en S-Curve Chart:", e$message), type = "error")
+      return(NULL)
+    })
+    
+    if(is.null(flighting_plot_gg) || is.null(s_curve_plot_gg)){
+      return(NULL)
+    }
     
     # Combinar con subplot
     subplot(flighting_plot_gg, s_curve_plot_gg,
@@ -407,41 +473,19 @@ server <- function(input, output, session) {
       layout(title = "S-Curve EDA")
   })
   
-  # TAB: Univariate - Gráfico Transformado
-  output$var_transf_chart <- renderPlotly({
-    req(rv$filtered_data, input$variable_univ)
-    data_chart <- rv$filtered_data
-    
-    data_chart$transformed <- apply_transformation(
-      data_chart[[input$variable_univ]],
-      input$transformation_univ,
-      alpha = input$alpha_univ,
-      beta = input$beta_univ,
-      maxval = input$maxval_univ,
-      decay = input$decay_univ,
-      lag = input$lag_univ
-    )
-    
-    date_col <- if("Period" %in% names(data_chart)) "Period" else "periodo"
-    
-    plotly::plot_ly(data_chart, x = ~get(date_col)) %>%
-      plotly::add_lines(y = ~transformed, name = "Transformed Variable", line = list(color = "red")) %>%
-      plotly::layout(
-        title = "Transformed Variable Over Time",
-        xaxis = list(title = "Time"),
-        yaxis = list(title = "Transformed Value"),
-        legend = list(orientation = "h", x = 0.1, y = -0.2)
-      )
-  })
-  
   # TAB: Multivariate - Gráficos
   output$variables_chart_multi <- renderPlot({
-    req(rv$filtered_data, input$var1_multi, input$var2_multi)
+    req(rv$filtered_data, input$var1_multi, input$var2_multi, input$var3_multi)
     data_chart <- rv$filtered_data
     date_col <- if("Period" %in% names(data_chart)) "Period" else "periodo"
     
+    vars_to_select <- c(input$var1_multi, input$var2_multi, input$var3_multi)
+    if(input$var4_multi != "None"){
+      vars_to_select <- c(vars_to_select, input$var4_multi)
+    }
+    
     plot_data <- data_chart %>%
-      select(!!sym(date_col), input$var1_multi, input$var2_multi, input$var3_multi, input$var4_multi) %>%
+      select(!!sym(date_col), all_of(vars_to_select)) %>%
       pivot_longer(cols = -!!sym(date_col), names_to = "variable", values_to = "value")
     
     if(input$sum_all_vars == "true"){
@@ -475,11 +519,16 @@ server <- function(input, output, session) {
   })
   
   output$boxplot_multi <- renderPlot({
-    req(rv$filtered_data, input$var1_multi, input$var2_multi)
+    req(rv$filtered_data, input$var1_multi, input$var2_multi, input$var3_multi)
     data_chart <- rv$filtered_data
     
+    vars_to_select <- c(input$var1_multi, input$var2_multi, input$var3_multi)
+    if(input$var4_multi != "None"){
+      vars_to_select <- c(vars_to_select, input$var4_multi)
+    }
+    
     plot_data <- data_chart %>%
-      select(input$var1_multi, input$var2_multi, input$var3_multi, input$var4_multi) %>%
+      select(all_of(vars_to_select)) %>%
       pivot_longer(cols = everything(), names_to = "variable", values_to = "value") %>%
       filter(!is.na(value))
     
@@ -491,16 +540,40 @@ server <- function(input, output, session) {
   })
   
   output$corr_matrix_multi <- renderPlot({
-    req(rv$filtered_data, input$var1_multi, input$var2_multi)
+    req(rv$filtered_data, input$var1_multi, input$var2_multi, input$var3_multi)
+    
     vars_to_correlate <- c(input$var1_multi, input$var2_multi, input$var3_multi)
-    if(!is.null(input$var4_multi) && input$var4_multi != "None"){
+    if(input$var4_multi != "None"){
       vars_to_correlate <- c(vars_to_correlate, input$var4_multi)
     }
+    
+    # Excluir "None" y asegurar que las variables existen
+    vars_to_correlate <- vars_to_correlate[vars_to_correlate != "None"]
+    
+    # Asegurar que las variables existen en los datos
+    vars_to_correlate <- vars_to_correlate[vars_to_correlate %in% names(rv$filtered_data)]
+    
+    if(length(vars_to_correlate) < 2){
+      showNotification("Se requieren al menos dos variables para la matriz de correlación.", type = "error")
+      return(NULL)
+    }
+    
     cor_data <- rv$filtered_data %>%
       select(all_of(vars_to_correlate)) %>%
       mutate(across(everything(), as.numeric))
     
+    # Verificar si hay suficientes datos
+    if(nrow(cor_data) < 2){
+      showNotification("No hay suficientes datos para la matriz de correlación.", type = "error")
+      return(NULL)
+    }
+    
     cor_matrix <- cor(cor_data, use = "pairwise.complete.obs")
+    
+    # Verificar si la matriz de correlación es válida
+    if(any(is.na(cor_matrix))){
+      showNotification("La matriz de correlación contiene valores NA. Verifica los datos ingresados.", type = "warning")
+    }
     
     corrplot(cor_matrix, method = "color",
              type = "upper",
@@ -521,7 +594,7 @@ server <- function(input, output, session) {
         newcol <- paste0(input$variable_univ, "_transformed")
         download_data[[newcol]] <- apply_transformation(
           rv$filtered_data[[input$variable_univ]],
-          input$transformation_univ,
+          type = input$transformation_univ,
           alpha = input$alpha_univ,
           beta = input$beta_univ,
           maxval = input$maxval_univ,
@@ -576,32 +649,129 @@ server <- function(input, output, session) {
       mutate(Period = if("Period" %in% names(.)) as.Date(Period) else if("periodo" %in% names(.)) as.Date(periodo) else as.Date(NA)) %>%
       select(Period, value = !!sym(var_name)) %>%
       filter(!is.na(Period))
+    
+    if(nrow(df_scurve) == 0){
+      showNotification("No hay datos disponibles para crear la S-Curve.", type = "error")
+      return(NULL)
+    }
 
     # Crear gráficos
-    flighting_plot_gg <- create_flighting_chart(
-      data_chart = df_scurve,
-      alpha       = alpha,
-      beta        = beta,
-      max_val_pct = max_val_pct,
-      decay       = decay,
-      lag         = lag,
-      var_name    = var_name
-    )
-
-    s_curve_plot_gg <- create_s_curve_chart(
-      data_chart = df_scurve,
-      alpha       = alpha,
-      beta        = beta,
-      max_val_pct = max_val_pct,
-      decay       = decay,
-      lag         = lag,
-      var_name    = var_name
-    )
-
+    flighting_plot_gg <- tryCatch({
+      create_flighting_chart(
+        data_chart = df_scurve,
+        alpha       = alpha,
+        beta        = beta,
+        max_val_pct = max_val_pct,
+        decay       = decay,
+        lag         = lag,
+        var_name    = var_name
+      )
+    }, error = function(e){
+      showNotification(paste("Error en Flighting Chart:", e$message), type = "error")
+      return(NULL)
+    })
+    
+    s_curve_plot_gg <- tryCatch({
+      create_s_curve_chart(
+        data_chart = df_scurve,
+        alpha       = alpha,
+        beta        = beta,
+        max_val_pct = max_val_pct,
+        decay       = decay,
+        lag         = lag,
+        var_name    = var_name
+      )
+    }, error = function(e){
+      showNotification(paste("Error en S-Curve Chart:", e$message), type = "error")
+      return(NULL)
+    })
+    
+    if(is.null(flighting_plot_gg) || is.null(s_curve_plot_gg)){
+      return(NULL)
+    }
+    
     # Combinar con subplot
     subplot(flighting_plot_gg, s_curve_plot_gg,
             nrows = 1, titleX = TRUE, titleY = TRUE) %>%
       layout(title = "S-Curve EDA")
+  })
+  
+  # TAB: Multivariate - S-Curve EDA Gráfico
+  output$s_curve_multivariate_plot <- renderPlotly({
+    req(rv$filtered_data, input$var1_multi, input$var2_multi, input$var3_multi)
+    
+    # Crear una suma de variables seleccionadas (excluyendo "None")
+    vars_to_sum <- c(input$var1_multi, input$var2_multi, input$var3_multi)
+    if(input$var4_multi != "None"){
+      vars_to_sum <- c(vars_to_sum, input$var4_multi)
+    }
+    
+    # Asegurar que las variables existen en los datos
+    available_vars <- vars_to_sum[vars_to_sum %in% names(rv$filtered_data)]
+    if(length(available_vars) == 0){
+      showNotification("No hay variables seleccionadas para crear la S-Curve Multivariada.", type = "error")
+      return(NULL)
+    }
+    
+    sum_variable <- rowSums(rv$filtered_data[available_vars], na.rm = TRUE)
+    
+    # Construir dataframe para S-Curve
+    df_scurve_multi <- rv$filtered_data %>%
+      mutate(Period = if("Period" %in% names(.)) as.Date(Period) else if("periodo" %in% names(.)) as.Date(periodo) else as.Date(NA)) %>%
+      select(Period, value = sum_variable) %>%
+      filter(!is.na(Period))
+    
+    if(nrow(df_scurve_multi) == 0){
+      showNotification("No hay datos disponibles para crear la S-Curve Multivariada.", type = "error")
+      return(NULL)
+    }
+    
+    var_name <- "Sum of Selected Variables"
+    alpha <- input$alpha_multi
+    beta <- input$beta_multi
+    max_val_pct <- input$maxval_multi
+    decay <- input$decay_multi
+    lag <- input$lag_multi
+    
+    # Crear gráficos
+    flighting_plot_gg <- tryCatch({
+      create_flighting_chart(
+        data_chart = df_scurve_multi,
+        alpha       = alpha,
+        beta        = beta,
+        max_val_pct = max_val_pct,
+        decay       = decay,
+        lag         = lag,
+        var_name    = var_name
+      )
+    }, error = function(e){
+      showNotification(paste("Error en Flighting Chart Multivariado:", e$message), type = "error")
+      return(NULL)
+    })
+    
+    s_curve_plot_gg <- tryCatch({
+      create_s_curve_chart(
+        data_chart = df_scurve_multi,
+        alpha       = alpha,
+        beta        = beta,
+        max_val_pct = max_val_pct,
+        decay       = decay,
+        lag         = lag,
+        var_name    = var_name
+      )
+    }, error = function(e){
+      showNotification(paste("Error en S-Curve Chart Multivariado:", e$message), type = "error")
+      return(NULL)
+    })
+    
+    if(is.null(flighting_plot_gg) || is.null(s_curve_plot_gg)){
+      return(NULL)
+    }
+    
+    # Combinar con subplot
+    subplot(flighting_plot_gg, s_curve_plot_gg,
+            nrows = 1, titleX = TRUE, titleY = TRUE) %>%
+      layout(title = "S-Curve EDA Multivariado")
   })
   
 }

@@ -286,6 +286,14 @@ ui <- fluidPage(
                                                    plotOutput("corr_matrix_multi", height = "250px")
                                                )
                                         )
+                                      ),
+                                      fluidRow(
+                                        column(12,
+                                               div(class = "chart-box",
+                                                   h4("S-Curve EDA Multivariado", class = "chart-title"),
+                                                   plotlyOutput("s_curve_multivariate_plot", height = "400px")
+                                               )
+                                        )
                                       )
                                   )
                               )
@@ -294,7 +302,7 @@ ui <- fluidPage(
                  )
         ),
         
-        # NUEVA PESTAÑA: S-Curve EDA
+        # TAB: S-Curve EDA
         tabPanel("S-Curve EDA",
                  fluidRow(
                    column(12,

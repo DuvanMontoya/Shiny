@@ -70,30 +70,36 @@ create_flighting_chart <- function(
   Avg_52w <- mean(last_52$value, na.rm=TRUE)
   if(is.na(Avg_52w)) Avg_52w <- 0
   
+  # Verificar que key_points tienen los puntos necesarios
+  required_points <- c("Breakthrough", "Optimal begins", "Saturation begins", "Full saturation")
+  key_points_filtered <- key_points %>% filter(Key_point %in% required_points)
+  
+  if(nrow(key_points_filtered) < length(required_points)){
+    stop("Faltan algunos puntos clave en key_points para Flighting Chart.")
+  }
+  
   # Construir el ggplot
   p <- ggplot(var_activity, aes(x=Period, y=value)) +
-    geom_hline(yintercept = subset(key_points, Key_point=="Breakthrough")$indexing, color="black", linewidth=0.2) +
-    geom_hline(yintercept = subset(key_points, Key_point=="Optimal begins")$indexing,  color="black", linewidth=0.2) +
-    geom_hline(yintercept = subset(key_points, Key_point=="Saturation begins")$indexing,color="black", linewidth=0.2) +
-    geom_hline(yintercept = subset(key_points, Key_point=="Full saturation")$indexing,  color="black", linewidth=0.2) +
+    # Solo agregar líneas horizontales si los puntos clave existen
+    geom_hline(data=key_points_filtered, aes(yintercept=indexing), color="black", linewidth=0.2) +
     
     # Bandas
     annotate("rect",
              xmin=min(var_activity$Period, na.rm=TRUE),
              xmax=max(var_activity$Period, na.rm=TRUE),
              ymin=0,
-             ymax=subset(key_points, Key_point=="Breakthrough")$indexing,
+             ymax=subset(key_points_filtered, Key_point=="Breakthrough")$indexing,
              alpha=0.2, fill="gray") +
     annotate("rect",
              xmin=min(var_activity$Period, na.rm=TRUE),
              xmax=max(var_activity$Period, na.rm=TRUE),
-             ymin=subset(key_points,Key_point=="Optimal begins")$indexing,
-             ymax=subset(key_points,Key_point=="Saturation begins")$indexing,
+             ymin=subset(key_points_filtered, Key_point=="Optimal begins")$indexing,
+             ymax=subset(key_points_filtered, Key_point=="Saturation begins")$indexing,
              alpha=0.2, fill="blue") +
     annotate("rect",
              xmin=min(var_activity$Period, na.rm=TRUE),
              xmax=max(var_activity$Period, na.rm=TRUE),
-             ymin=subset(key_points,Key_point=="Full saturation")$indexing,
+             ymin=subset(key_points_filtered, Key_point=="Full saturation")$indexing,
              ymax=max_activity,
              alpha=0.2, fill="gray") +
     
@@ -102,7 +108,8 @@ create_flighting_chart <- function(
     geom_line(color="black") +
     
     # Max efficiency
-    geom_hline(yintercept = subset(key_points, Key_point=="Max efficiency")$indexing,
+    geom_hline(data=subset(key_points, Key_point=="Max efficiency"),
+               aes(yintercept=indexing),
                linetype=2, color="darkgoldenrod3") +
     # 52w average
     geom_hline(yintercept=Avg_52w, linetype=2, color="darkgreen") +
@@ -119,6 +126,11 @@ create_flighting_chart <- function(
          y=var_name) +
     theme_minimal()
   
+  # Manejar caso donde max_activity es -Inf o Inf
+  if(is.infinite(max_activity)){
+    p <- p + coord_cartesian(ylim = c(0, max(var_activity$value, na.rm=TRUE)))
+  }
+  
   ggplotly(p)
 }
 
@@ -133,7 +145,9 @@ create_s_curve_chart <- function(
   var_name="Variable"
 ) {
   max_activity <- max(data_chart$value,na.rm=TRUE)
-  if(is.infinite(max_activity)) max_activity <- 1
+  if(is.infinite(max_activity) || max_activity == 0){
+    max_activity <- 1
+  }
   
   i_max <- 500
   index <- seq(0,i_max,by=1)
@@ -192,10 +206,19 @@ create_s_curve_chart <- function(
   # Filtrar data_s_curves para indexing <= max_activity
   data_s_curves_plot <- data_s_curves %>% filter(indexing <= max_activity)
   
+  # Verificar que key_points tienen los puntos necesarios
+  required_points <- c("Breakthrough", "Optimal begins", "Saturation begins", "Full saturation")
+  key_points_filtered <- key_points %>% filter(Key_point %in% required_points)
+  
+  if(nrow(key_points_filtered) < length(required_points)){
+    stop("Faltan algunos puntos clave en key_points para S-Curve Chart.")
+  }
+  
   gg_s_curve <- ggplot(data_s_curves_plot, aes(x=indexing, y=s_curve_index)) +
+    # Solo agregar rectángulos si key_points_filtered tiene los puntos
     annotate("rect",
-             xmin=subset(key_points, Key_point=="Optimal begins")$indexing,
-             xmax=subset(key_points, Key_point=="Saturation begins")$indexing,
+             xmin=subset(key_points_filtered, Key_point=="Optimal begins")$indexing,
+             xmax=subset(key_points_filtered, Key_point=="Saturation begins")$indexing,
              ymin=0, ymax=1,
              alpha=0.2, fill="blue") +
     geom_line() +
