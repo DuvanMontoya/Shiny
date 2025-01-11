@@ -156,6 +156,7 @@ server <- function(input, output, session) {
     filtered <- rv$data
     
     # Filtrar por geografía si aplica
+    req(input$geography)
     if(input$geography != "All/Total"){
       if("Geography" %in% names(filtered)){
         filtered <- filtered %>% filter(Geography == input$geography)
@@ -194,13 +195,17 @@ server <- function(input, output, session) {
     
     # Filtrar por rango de fecha univ
     date_col <- if("Period" %in% names(filtered)) "Period" else if("periodo" %in% names(filtered)) "periodo" else NULL
-    if(!is.null(date_col)){
+    if(!is.null(date_col) && !is.null(input$date_range_univ)){
       filtered[[date_col]] <- as.Date(filtered[[date_col]])
-      filtered <- filtered %>%
-        filter(
-          !!sym(date_col) >= input$date_range_univ[1],
-          !!sym(date_col) <= input$date_range_univ[2]
-        )
+      date_range <- input$date_range_univ
+      if(!is.null(date_range) && length(date_range) == 2){
+        filtered <- filtered %>%
+          filter(
+            !is.na(!!sym(date_col)),
+            !!sym(date_col) >= date_range[1],
+            !!sym(date_col) <= date_range[2]
+          )
+      }
     }
     
     rv$filtered_data <- filtered
