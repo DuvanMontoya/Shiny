@@ -66,7 +66,6 @@ ui <- fluidPage(
             tags$small("Supported formats: CSV, RData", class = "text-muted"),
             
             # Selector de MES (o TODOS)
-            # El usuario quiere escoger un mes específico o la opción "Todos los meses".
             # Notar que con un vector de strings (Enero, Febrero, etc.) se podría usar month.name.
             # Para simplificar, se incluyen 12 meses y la opción "All".
             selectInput("month_filter",
@@ -229,7 +228,7 @@ ui <- fluidPage(
                      fluidRow(
                        column(6,
                               div(class = "chart-box",
-                                  h4("Boxplot (reemplaza S-Curve)", class = "chart-title"),
+                                  h4("Boxplot", class = "chart-title"),
                                   plotOutput("boxplot_univ")  # NUEVO OUTPUT
                               )
                        ),
@@ -245,13 +244,12 @@ ui <- fluidPage(
                      # Curva S condicional: solo si "S Origin" (o "S Shaped") 
                      # y si realmente la queremos mostrar.
                      # Por ejemplo, si la fuente de datos es S Origin, 
-                     # o si el user elige la transf "S Origin" (según tu necesidad).
                      conditionalPanel(
                        condition = "input.transformation_univ == 'S Origin'",
                        fluidRow(
                          column(12,
                            div(class = "chart-box",
-                               h4("S-Curve EDA (solo si 'S Origin')", class = "chart-title"),
+                               h4("S-Curve EDA", class = "chart-title"),
                                plotlyOutput("s_curve_univariate_plot", height = "400px")
                            )
                          )
@@ -354,7 +352,7 @@ ui <- fluidPage(
                       fluidRow(
                         column(12,
                                div(class = "chart-box shadow",
-                                   h4("S-Curve EDA Multivariado (solo si 'S Origin')",
+                                   h4("S-Curve EDA Multivariado",
                                       class = "chart-title"),
                                    plotlyOutput("s_curve_multivariate_plot",
                                                 height = "400px")
@@ -369,7 +367,5 @@ ui <- fluidPage(
       )
     )
 
-    # Se elimina la pestaña "S-Curve EDA" según tu instrucción.
-    # tabPanel("S-Curve EDA", ...)  # <-- REMOVIDA
-  )
+      )
 )
